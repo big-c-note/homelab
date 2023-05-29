@@ -1,0 +1,79 @@
+- name: Install KVM packages
+  hosts: all
+  become: yes
+  vars:
+    vm_config_directory: "~/vm_configs"
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install KVM packages
+      apt:
+        name: 
+          - qemu-kvm
+          - libvirt-daemon-system
+        state: present
+
+    - name: Start libvirtd service
+      systemd:
+        name: libvirtd
+        state: started
+
+    - name: Enable libvirtd service at boot
+      systemd:
+        name: libvirtd
+        enabled: yes
+
+    - name: Install snapd
+      apt:
+        name: snapd
+        state: latest
+
+    - name: Install Multipass
+      snap:
+        name: multipass
+        classic: yes
+
+    - name: Install Ansible on the remote host
+      become: yes
+      apt:
+        name: ansible
+        state: present
+
+    - name: Create ~/.vm_configs folder
+      become: no
+      file:
+        path: ~/vm_configs
+        state: directory
+        mode: '0755'
+
+    - name: Read SSH public key file
+      become: no
+      slurp:
+        path: ~/.ssh/multipass-ssh-key.pub
+      register: ssh_pub_key
+
+    - name: Create cloud-init file on the host
+      become: no
+      copy:
+        content: |
+          users:
+            - default
+            - name: ubuntu
+              sudo: ALL=(ALL) NOPASSWD:ALL
+              ssh_authorized_keys:
+                - {{ ssh_pub_key.content | b64decode }}
+        dest: ~/vm_configs/vm-cloud-init.yaml
+        mode: '0644'
+
+    - name: Transfer Ansible configuration files to host
+      become: no
+      copy:
+        src: "{{ item }}"
+        dest: "{{ vm_config_directory }}"
+      loop:
+        - "host-setup.yaml"
+        - "dotfiles.yaml"
+        - "python-env.yaml"

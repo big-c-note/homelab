@@ -1,0 +1,20 @@
+#cloud-config
+autoinstall:
+  version: 1
+  identity:
+    hostname: ${HOSTNAME}
+    realname: ${REALNAME}
+    username: ${USERNAME}
+    password: ${AUTOINSTALL_PASS}
+  ssh:
+    install-server: true
+    allow-pw: false
+    authorized-keys:
+    - ${PUB_SSH_KEY}
+  apt:
+    geoip: true
+    preserve_sources_list: false
+    primary:
+    - arches: [amd64, i386]
+      uri: http://archive.ubuntu.com/ubuntu
+  timezone: America/New_York

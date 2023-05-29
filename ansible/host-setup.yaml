@@ -1,0 +1,18 @@
+---
+- hosts: "{{ target_hosts }}"
+  gather_facts: yes
+  become: yes
+  vars:
+    create_env: "genpur"
+
+  tasks:
+    - name: Run dotfiles.yaml playbook
+      include_tasks: dotfiles.yaml
+      vars:
+        home_directory: "/home/{{ ansible_user }}"
+
+    - name: Run python-env.yaml playbook
+      include_tasks: python-env.yaml
+      vars:
+        home_directory: "/home/{{ ansible_user }}"
+        env: "{{ create_env }}"

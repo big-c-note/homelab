@@ -1,0 +1,16 @@
+---
+- name: Create VM with Multipass
+  hosts: homelab
+  gather_facts: false
+  become: yes
+  vars:
+    vm_name: "myvm"
+    vm_config_directory: "~/vm_configs"
+
+  tasks:
+    - name: Run dotfiles playbook on host
+      become: no
+      shell: >
+        ansible-playbook -vv {{ vm_config_directory }}/host-setup.yaml \
+        -i {{ vm_config_directory }}/vm-inventory.ini -e "target_hosts={{ vm_name }}"
+

@@ -1,0 +1,94 @@
+- name: Print current user
+  command: whoami
+  register: who_am_i
+  become: no
+
+- name: Show who I am
+  debug:
+    var: who_am_i.stdout
+
+- name: Ensure Python is installed
+  become: yes
+  apt:
+    name: python3
+    state: present
+
+- name: Install curl and software-properties-common
+  become: yes
+  apt:
+    pkg:
+      - curl
+      - software-properties-common
+    state: present
+
+- name: Add NodeSource distributions node.js repository
+  become: yes
+  shell: curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+
+- name: Install Node.js from NodeSource
+  become: yes
+  apt:
+    name: nodejs
+    state: present
+
+- name: Install FZF
+  become: no
+  git:
+    repo: 'https://github.com/junegunn/fzf.git'
+    dest: "{{ home_directory }}/.fzf"
+    depth: 1
+
+- name: Run FZF install script
+  become: no
+  command: "{{ home_directory }}/.fzf/install --all"
+
+- name: Clone dot_files repository
+  become: no
+  git:
+    repo: 'https://github.com/big-c-note/dotfiles.git'
+    dest: "{{ home_directory }}/.dot"
+    version: master
+    bare: yes
+  
+- name: Set up alias 
+  become: no
+  lineinfile:
+    path: "{{ home_directory }}/.bashrc"
+    line: "alias dot='git --git-dir=$HOME/.dot/ --work-tree=$HOME'"
+    state: present
+
+- name: Checkout dotfiles from repo to home folder
+  become: no
+  command: |
+    git --git-dir={{ home_directory }}/.dot/ \
+    --work-tree={{ home_directory }} checkout
+  ignore_errors: yes
+
+- name: Configure dotfiles repository
+  become: no
+  command: |
+    git --git-dir={{ home_directory }}/.dot/ \
+    --work-tree={{ home_directory }} config --local status.showUntrackedFiles no
+
+- name: Install silversearcher-ag
+  become: yes
+  apt:
+    name: silversearcher-ag
+    state: present
+
+- name: Check if vim-plug is installed
+  become: no
+  stat:
+    path: "{{ home_directory }}/.vim/autoload/plug.vim"
+  register: vim_plug
+
+- name: Install vim-plug
+  become: no
+  shell: >
+    curl -fLo {{ home_directory }}/.vim/autoload/plug.vim 
+    --create-dirs https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+  when: not vim_plug.stat.exists
+
+- name: Install vim Plugins
+  become: no
+  command: vim +PlugInstall +qall

@@ -1,0 +1,85 @@
+---
+- name: Create VM with Multipass
+  hosts: homelab
+  gather_facts: false
+  become: yes
+  vars:
+    vm_name: "myvm"
+    vm_memory: "2G"
+    vm_disk: "10G"
+    vm_cpus: "2"
+    os_version: "22.04"
+    vm_config_directory: "~/vm_configs"
+
+  vars_prompt:
+    - name: "passphrase"
+      prompt: "Please enter your Multipass passphrase"
+      private: yes
+
+  tasks:
+    - name: Authenticate with Multipass
+      become: no
+      shell: echo '{{ passphrase }}' | multipass authenticate
+      no_log: true
+
+    - name: Create a new VM with multipass
+      become: no
+      shell: |
+        multipass launch -n {{ vm_name }} -m {{ vm_memory }} -d {{ vm_disk }} \
+        -c {{ vm_cpus }} {{ os_version }} --cloud-init {{ vm_config_directory }}/vm-cloud-init.yaml
+
+    - name: Get IP of the new VM
+      become: no
+      shell: "multipass info {{ vm_name }} --format csv | tail -n 1 | cut -d ',' -f 3"
+      register: vm_ip
+      changed_when: False
+
+    - name: Check if inventory file already exists
+      become: no
+      stat: 
+        path: "{{ vm_config_directory }}/vm-inventory.ini"
+      register: inventory_file
+
+    - name: Create a new inventory file
+      become: no
+      copy:
+        content: ""
+        dest: "{{ vm_config_directory }}/vm-inventory.ini"
+      when: not inventory_file.stat.exists
+
+    - name: Check if inventory file already exists
+      become: no
+      stat: 
+        path: "{{ vm_config_directory }}/vm-inventory.ini"
+      register: inventory_file
+
+    - name: Check if VM IP is already in inventory file
+      become: no
+      command:
+        cmd: grep -q "{{ vm_name }}" {{ vm_config_directory }}/vm-inventory.ini
+      register: vm_exists_in_inventory
+      ignore_errors: yes
+      when: inventory_file.stat.exists
+      failed_when: vm_exists_in_inventory.stdout_lines | length > 0
+
+    - name: Print vm_exists_in_inventory
+      debug:
+        var: vm_exists_in_inventory
+
+    - name: Add new VM to existing inventory file
+      become: no
+      lineinfile:
+        path: "{{ vm_config_directory }}/vm-inventory.ini"
+        line: "[{{ vm_name }}]"
+      when: inventory_file.stat.exists
+
+    - name: Add new VM to existing inventory file
+      become: no
+      lineinfile:
+        path: "{{ vm_config_directory }}/vm-inventory.ini"
+        line: >
+          {{ vm_ip.stdout }} 
+          ansible_user=ubuntu 
+          ansible_ssh_private_key_file=~/.ssh/multipass-ssh-key
+          ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+      when: inventory_file.stat.exists
