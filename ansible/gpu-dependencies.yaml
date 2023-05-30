@@ -11,5 +11,6 @@
     apt:
       name: nvidia-driver-525-server # 530-open autoinstall is not working for me.
       state: present
+
   - name: Reboot the server
     reboot:

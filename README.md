@@ -124,8 +124,11 @@ Remember to replace the `<inventory-file>` placeholder with the path to your Ans
 
 6. **gpu-dependencies.yaml**: The playbook installs the necessary drivers for my 3070 and reboots.
 7. **host-dependencies.yaml**: Installing docker and container with nvidia support.
+ 
+**Note**: These were not fully tested, but the source is here:
 
 See [this article](https://linuxconfig.org/how-to-install-the-nvidia-drivers-on-ubuntu-22-04) for more info.
+[This article](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#setting-up-docker) as well.
 
 ## Additional Playbooks (TODO):
 
