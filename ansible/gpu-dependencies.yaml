@@ -1,0 +1,15 @@
+---
+- hosts: homelab
+  become: yes
+  tasks:
+  - name: Update and upgrade apt packages
+    apt:
+      upgrade: 'yes'
+      update_cache: 'yes'
+
+  - name: Install nvidia-driver-525-server
+    apt:
+      name: nvidia-driver-525-server # 530-open autoinstall is not working for me.
+      state: present
+  - name: Reboot the server
+    reboot:

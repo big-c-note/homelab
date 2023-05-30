@@ -122,6 +122,11 @@ Please ensure that you modify the playbooks to suit your specific requirements a
 
 Remember to replace the `<inventory-file>` placeholder with the path to your Ansible inventory file.
 
+6. **gpu-dependencies.yaml**: The playbook installs the necessary drivers for my 3070 and reboots.
+7. **host-dependencies.yaml**: Installing docker and container with nvidia support.
+
+See [this article](https://linuxconfig.org/how-to-install-the-nvidia-drivers-on-ubuntu-22-04) for more info.
+
 ## Additional Playbooks (TODO):
 
 1. - **ssh.yaml**: Playbook to change ports.

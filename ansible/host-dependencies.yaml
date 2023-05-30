@@ -1,0 +1,56 @@
+---
+- hosts: homelab
+  become: yes
+  tasks:
+    - name: Update and upgrade apt packages
+      apt:
+        upgrade: 'yes'
+        update_cache: 'yes'
+
+    - name: Add Docker's official GPG key
+      apt_key:
+        url: "https://download.docker.com/linux/ubuntu/gpg"
+        state: present
+
+    - name: Verify Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Update apt and install docker-ce
+      apt:
+        name: docker-ce
+        update_cache: 'yes'
+        state: present
+    # Also can be installed via:
+    # curl https://get.docker.com | sh \
+    #   && sudo systemctl --now enable docker
+    # https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html#setting-up-docker
+
+    - name: Set distribution variable
+      shell: |
+        distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
+              && curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+              && curl -s -L https://nvidia.github.io/libnvidia-container/$distribution/libnvidia-container.list | \
+                    sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+                    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+
+    - name: Install NVIDIA Container Toolkit
+      apt:
+        name: nvidia-container-toolkit
+        state: present
+        update_cache: yes
+
+    - name: Configure Docker daemon for NVIDIA Container Runtime
+      command: sudo nvidia-container-cli runtime docker configure --docker-plugin-dir=/usr/lib/nvidia-container-runtime
+      become: yes
+
+    - name: Restart Docker daemon
+      service:
+        name: docker
+        state: restarted
+      become: yes
